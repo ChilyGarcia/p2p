@@ -7,6 +7,128 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+# Vakano P2P - Plataforma con Autenticación de Google
+
+Este proyecto incluye autenticación de usuarios mediante Google OAuth usando Laravel Socialite en Laravel 12.
+
+## Tabla de contenidos
+
+- [Requisitos previos](#requisitos-previos)
+- [Instalación](#instalación)
+- [Configuración de autenticación con Google](#configuración-de-autenticación-con-google)
+  - [Obtener credenciales de Google](#obtener-credenciales-de-google)
+  - [Configurar variables de entorno](#configurar-variables-de-entorno)
+- [Cómo funciona la autenticación](#cómo-funciona-la-autenticación)
+- [Estructura del código](#estructura-del-código)
+
+## Requisitos previos
+
+- PHP 8.2 o superior
+- Composer
+- Cuenta de Google para acceder a Google Cloud Console
+- Base de datos compatible con Laravel (MySQL, PostgreSQL, SQLite)
+
+## Instalación
+
+1. Clona el repositorio
+   ```bash
+   git clone <repositorio>
+   cd p2p
+   ```
+
+2. Instala las dependencias
+   ```bash
+   composer install
+   ```
+
+3. Copia el archivo de entorno y genera la clave de la aplicación
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. Configura la base de datos en el archivo `.env`
+
+5. Ejecuta las migraciones
+   ```bash
+   php artisan migrate
+   ```
+
+## Configuración de autenticación con Google
+
+### Obtener credenciales de Google
+
+1. Accede a [Google Cloud Console](https://console.cloud.google.com/)
+2. Crea un nuevo proyecto o selecciona uno existente
+3. Navega a **APIs y servicios** > **Pantalla de consentimiento de OAuth**
+   - Configura la pantalla de consentimiento (tipo Externo o Interno)
+   - Completa la información requerida (nombre de la aplicación, correo de soporte, etc.)
+
+4. Ve a **APIs y servicios** > **Credenciales**
+   - Haz clic en **Crear credenciales** > **ID de cliente de OAuth**
+   - Selecciona **Aplicación web**
+   - Asigna un nombre a tu cliente
+   - En **Orígenes de JavaScript autorizados**, añade tu URL base (ej: `http://localhost:8000`)
+   - En **URIs de redirección autorizados**, añade la URL de callback:
+     ```
+     http://localhost:8000/auth/google/callback
+     ```
+   - Haz clic en **Crear**
+
+5. Guarda el **ID de cliente** y **Secreto del cliente** generados
+
+### Configurar variables de entorno
+
+1. Abre el archivo `.env` y añade las siguientes variables:
+   ```
+   GOOGLE_CLIENT_ID=tu_client_id_aquí
+   GOOGLE_CLIENT_SECRET=tu_client_secret_aquí
+   GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+   ```
+
+2. Asegúrate de que la URL de redirección coincida exactamente con la configurada en Google Cloud Console
+
+## Cómo funciona la autenticación
+
+1. El usuario hace clic en el botón "Iniciar sesión con Google"
+2. El usuario es redirigido a la página de inicio de sesión de Google
+3. Después de autenticarse, Google redirige al usuario de vuelta a la aplicación
+4. La aplicación crea o actualiza el registro del usuario con la información de Google
+5. El usuario inicia sesión automáticamente y es redirigido a la página principal
+
+## Estructura del código
+
+- **Rutas**: Las rutas de autenticación se definen en `routes/web.php`
+  ```php
+  Route::get('auth/google', [GoogleController::class, 'redirectToGoogle']);
+  Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+  ```
+
+- **Controlador**: La lógica de autenticación está en `app/Http/Controllers/Auth/GoogleController.php`
+  ```php
+  // Redirección a Google
+  public function redirectToGoogle()
+  {
+      return Socialite::driver('google')->redirect();
+  }
+
+  // Manejo de la respuesta
+  public function handleGoogleCallback()
+  {
+      $googleUser = Socialite::driver('google')->stateless()->user();
+      // Crear/actualizar usuario y iniciar sesión
+  }
+  ```
+
+- **Configuración**: La configuración de Google se define en `config/services.php`
+  ```php
+  'google' => [
+      'client_id' => env('GOOGLE_CLIENT_ID'),
+      'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+      'redirect' => env('GOOGLE_REDIRECT_URI'),
+  ],
+  ```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
